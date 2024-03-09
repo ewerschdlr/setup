@@ -2,7 +2,6 @@
 
 GIT_NAME="$1"
 GIT_EMAIL="$2"
-
 LOG_FILE="${3:-/tmp/macsetup.log}"
 
 DEV_LANGUAGES=(
@@ -66,6 +65,7 @@ SOFTWARES=(
     "vlc"
     "grammarly-desktop"
     "nordvpn"
+    "cirruslabs/cli/tart"
 )
 
 DEVICES_SOFTWARES=(
@@ -98,13 +98,18 @@ git config --global user.email $GIT_EMAIL
     # homebrew
     echo '# Installing Homebrew'
     curl -s https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh | bash
-    echo '# making Homebrew visible' >> $HOME/.zprofile
+    echo '# This loads homebrew' >> $HOME/.zprofile
     echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> $HOME/.zprofile
     eval "$(/opt/homebrew/bin/brew shellenv)"
 
     # dev languages
     echo '# Installing dev languages'
     brew install ${DEV_LANGUAGES[@]};
+
+    echo "export NVM_DIR=\"\$HOME/.nvm\"" >> $HOME/.zprofile
+    echo "[ -s \"/opt/homebrew/opt/nvm/nvm.sh\" ] && \. \"/opt/homebrew/opt/nvm/nvm.sh\"  # This loads nvm" >> $HOME/.zprofile
+    echo "[ -s \"/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm\" ] && \. \"/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm\"  # This loads nvm bash_completion" >> $HOME/.zprofile
+    source $HOME/.zprofile
     nvm install --lts;
     nvm use --lts;
 
