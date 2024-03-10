@@ -78,13 +78,13 @@ FILE_SYSTEM_EXTENSION=(
 )
 
 if [ -z "$GIT_NAME" ]; then
-  echo "Please provide your git name"
-  exit 1
+  echo -n "Please provide your git name: "
+  read GIT_NAME
 fi
 
 if [ -z "$GIT_EMAIL" ]; then
-  echo "Please provide your git email"
-  exit 1
+  echo -n "Please provide your git email: "
+  read GIT_EMAIL
 fi
 
 # Xcode CLI
@@ -96,23 +96,28 @@ git config --global user.email $GIT_EMAIL
 
 (
     # homebrew
-    echo '# Installing Homebrew'
-    curl -s https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh | bash
-    echo '# This loads homebrew' >> $HOME/.zprofile
-    echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> $HOME/.zprofile
-    eval "$(/opt/homebrew/bin/brew shellenv)"
+    if ! command -v brew &>/dev/null; then
+        echo '# Installing Homebrew'
+        curl -s https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh | bash
+        echo '# This loads homebrew' >> $HOME/.zprofile
+        echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> $HOME/.zprofile
+        eval "$(/opt/homebrew/bin/brew shellenv)"
+    fi
 
     # dev languages
     echo '# Installing dev languages'
     brew install ${DEV_LANGUAGES[@]};
 
-    echo "export NVM_DIR=\"\$HOME/.nvm\"" >> $HOME/.zprofile
-    echo "[ -s \"/opt/homebrew/opt/nvm/nvm.sh\" ] && \. \"/opt/homebrew/opt/nvm/nvm.sh\"  # This loads nvm" >> $HOME/.zprofile
-    echo "[ -s \"/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm\" ] && \. \"/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm\"  # This loads nvm bash_completion" >> $HOME/.zprofile
-    source $HOME/.zprofile
-    nvm install --lts;
-    nvm use --lts;
-
+    # nvm
+    if [ -z "$NVM_DIR" ]; then
+        echo "export NVM_DIR=\"\$HOME/.nvm\"" >> $HOME/.zprofile
+        echo "[ -s \"/opt/homebrew/opt/nvm/nvm.sh\" ] && \. \"/opt/homebrew/opt/nvm/nvm.sh\"  # This loads nvm" >> $HOME/.zprofile
+        echo "[ -s \"/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm\" ] && \. \"/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm\"  # This loads nvm bash_completion" >> $HOME/.zprofile
+        source $HOME/.zprofile
+        nvm install --lts
+        nvm use --lts
+    fi
+    
     # dev tools
     echo '# Installing dev tools'
     brew install ${DEV_TOOLS[@]};
