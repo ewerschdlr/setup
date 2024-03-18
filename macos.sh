@@ -2,16 +2,20 @@
 
 GIT_NAME="$1"
 GIT_EMAIL="$2"
-LOG_FILE="${3:-/tmp/macsetup.log}"
+LOG_FILE="$3"
 
-DEV_LANGUAGES=(
+GREEN="\033[1;32m"
+GRAY="\033[1;90m"
+ENDCOLOR="\033[0m"
+
+DEVELOPMENT=(
     "flutter"
     "kotlin"
     "clojure"
-    "nvm"
-)
-
-DEV_TOOLS=(
+    "neovim"
+    "emacs"
+    "intellij-idea-ce"
+    "android-studio"
     "iterm2"
     "dbeaver-community"
     "insomnia"
@@ -19,6 +23,7 @@ DEV_TOOLS=(
     "font-fira-code"
     "android-platform-tools"
     "android-file-transfer"
+    "gh"
     "github"
     "openjdk"
     "zsh"
@@ -28,14 +33,7 @@ DEV_TOOLS=(
     "gradle"
     "xcodegen"
     "scrcpy"
-)
-
-CODE_EDITORS=(
-    "neovim"
-    "emacs"
-    "intellij-idea-ce"
-    "android-studio"
-    "visual-studio-code"
+    "bash"
 )
 
 SOFTWARES=(
@@ -47,94 +45,114 @@ SOFTWARES=(
     "spotify"
     "notion"
     "notion-calendar"
-    "zoom"
-    "microsoft-teams"
-    "google-chrome"
-    "brave-browser"
-    "firefox"
-    "obsidian"
     "miro"
     "figma"
+    "zoom"
+    "google-chrome"
+    "brave-browser"
+    "obsidian"
     "raycast"
-    "fig"
     "gimp"
-    "anki"
     "setapp"
     "cleanshot"
     "obs"
     "vlc"
     "grammarly-desktop"
     "nordvpn"
-    "cirruslabs/cli/tart"
-)
-
-DEVICES_SOFTWARES=(
+    "appcleaner"
+    "ffmpeg"
     "logi-options-plus"
     "ankerwork"
 )
 
-FILE_SYSTEM_EXTENSION=(
+FILE_SYSTEM_EXTENSIONS=(
     "macfuse"
 )
 
-if [ -z "$GIT_NAME" ]; then
-  echo -n "Please provide your git name: "
-  read GIT_NAME
+if [ -z "$LOG_FILE" ]; then
+  echo -ne "Enter file in which to save the log ${GRAY}(/tmp/setup-mac.log)${ENDCOLOR}: "
+  read -r LOG_FILE
+
+  if [ -z "$LOG_FILE" ]; then
+    LOG_FILE="/tmp/setup-mac.log"
+  else
+    LOG_DIR=$(dirname "$LOG_FILE")
+
+    if [ ! -d "$LOG_DIR" ]; then
+      echo "The directory $LOG_DIR does not exist."
+      echo -ne "Do you want to create it? ${GRAY}(${ENDCOLOR}y${GRAY}/n)${ENDCOLOR}: "
+      read -r create_dir
+      if [[ "$create_dir" == "y" || "$create_dir" == "Y" || "$create_dir" == "" ]]; then
+        mkdir -p "$LOG_DIR"
+      else
+        LOG_FILE="/tmp/setup-mac.log"
+        echo "Using the default destination instead: $LOG_FILE"
+      fi
+    fi
+  fi
 fi
 
-if [ -z "$GIT_EMAIL" ]; then
-  echo -n "Please provide your git email: "
-  read GIT_EMAIL
+echo -ne "Do you want to config your git user name and email? ${GRAY}(${ENDCOLOR}y${GRAY}/n)${ENDCOLOR}: "
+read -r config_git
+if [[ "$config_git" == "y" || "$config_git" == "Y" || "$config_git" == "" ]]; then
+  if [ -z "$GIT_NAME" ]; then
+    echo -n "Please provide your git name: "
+    read -r GIT_NAME
+  fi
+
+  if [ -z "$GIT_EMAIL" ]; then
+    echo -n "Please provide your git email: "
+    read -r GIT_EMAIL
+  fi
 fi
 
-# Xcode CLI
-xcode-select --install 2>&1 | tee -a $LOG_FILE
+# Xcode CLI tools
+echo -e "\n${GREEN}# Installing Xcode Command Line Tools${ENDCOLOR}\n"
+xcode-select --install 2>&1 | tee -a "$LOG_FILE"
 
 # git config
-git config --global user.name $GIT_NAME
-git config --global user.email $GIT_EMAIL
+if [ -n "$GIT_NAME" ]; then
+  git config --global user.name "$GIT_NAME"
+fi
+if [ -n "$GIT_EMAIL" ]; then
+  git config --global user.email "$GIT_EMAIL"
+fi
 
 (
     # homebrew
     if ! command -v brew &>/dev/null; then
-        echo '# Installing Homebrew'
+        echo -e "\n${GREEN}# Installing Homebrew${ENDCOLOR}\n"
         curl -s https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh | bash
-        echo '# This loads homebrew' >> $HOME/.zprofile
-        echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> $HOME/.zprofile
+        echo "eval \"$(/opt/homebrew/bin/brew shellenv)\" # This loads homebrew" >> "$HOME"/.zprofile
         eval "$(/opt/homebrew/bin/brew shellenv)"
+        brew update
     fi
 
-    # dev languages
-    echo '# Installing dev languages'
-    brew install ${DEV_LANGUAGES[@]};
+    # development tools
+    echo -e "\n${GREEN}# Installing development tools${ENDCOLOR}\n"
+    brew install "${DEVELOPMENT[@]}"
 
     # nvm
     if [ -z "$NVM_DIR" ]; then
-        echo "export NVM_DIR=\"\$HOME/.nvm\"" >> $HOME/.zprofile
-        echo "[ -s \"/opt/homebrew/opt/nvm/nvm.sh\" ] && \. \"/opt/homebrew/opt/nvm/nvm.sh\"  # This loads nvm" >> $HOME/.zprofile
-        echo "[ -s \"/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm\" ] && \. \"/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm\"  # This loads nvm bash_completion" >> $HOME/.zprofile
-        source $HOME/.zprofile
+        brew uninstall --ignore-dependencies node
+        brew uninstall --force node
+        brew install nvm
+        mkdir ~/.nvm
+        {
+          echo "export NVM_DIR=\"\$HOME/.nvm\""
+          "[ -s \"/opt/homebrew/opt/nvm/nvm.sh\" ] && \. \"/opt/homebrew/opt/nvm/nvm.sh\"  # This loads nvm"
+          "[ -s \"/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm\" ] && \. \"/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm\"  # This loads nvm bash_completion"
+        } >> "$HOME"/.zprofile
+        source "$HOME"/.zprofile
         nvm install --lts
         nvm use --lts
     fi
-    
-    # dev tools
-    echo '# Installing dev tools'
-    brew install ${DEV_TOOLS[@]};
-
-    # code editors
-    echo '# Installing code editors'
-    brew install ${CODE_EDITORS[@]};
 
     # softwares
-    echo '# Installing softwares'
-    brew install ${SOFTWARES[@]};
+    echo -e "\n${GREEN}# Installing softwares${ENDCOLOR}\n"
+    brew install "${SOFTWARES[@]}";
 
-    # devices software
-    echo '# Installing devices software'
-    brew install ${DEVICES_SOFTWARES[@]};
-
-    # file system extension
-    echo '# Installing file system extension'
-    brew install ${FILE_SYSTEM_EXTENSION[@]};
-) 2>&1 | tee -a $LOG_FILE
+    # file system extensions
+    echo -e "\n${GREEN}# Installing file system extensions${ENDCOLOR}\n"
+    brew install "${FILE_SYSTEM_EXTENSIONS[@]}";
+) 2>&1 | tee -a "$LOG_FILE"
