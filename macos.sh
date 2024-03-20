@@ -6,14 +6,14 @@ LOG_FILE="$3"
 
 GREEN="\033[1;32m"
 GRAY="\033[1;90m"
+RED="\033[1;31m"
 ENDCOLOR="\033[0m"
 
 DEVELOPMENT=(
     "flutter"
     "kotlin"
-    "clojure"
+    "nvm"
     "neovim"
-    "emacs"
     "intellij-idea-ce"
     "android-studio"
     "iterm2"
@@ -33,6 +33,7 @@ DEVELOPMENT=(
     "gradle"
     "xcodegen"
     "scrcpy"
+    "google-cloud-sdk"
     "bash"
 )
 
@@ -128,27 +129,36 @@ fi
         brew update
     fi
 
+    # cleaning the environment for brew installs
+    brew uninstall --ignore-dependencies node
+    brew uninstall --force node
+
     # development tools
     echo -e "\n${GREEN}# Installing development tools${ENDCOLOR}\n"
     brew install "${DEVELOPMENT[@]}"
 
-    # nvm
-    if [ -z "$NVM_DIR" ]; then
-        brew uninstall --ignore-dependencies node
-        brew uninstall --force node
-        brew install nvm
-        mkdir ~/.nvm
-        {
-          echo "export NVM_DIR=\"\$HOME/.nvm\""
-          "[ -s \"/opt/homebrew/opt/nvm/nvm.sh\" ] && \. \"/opt/homebrew/opt/nvm/nvm.sh\"  # This loads nvm"
-          "[ -s \"/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm\" ] && \. \"/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm\"  # This loads nvm bash_completion"
-        } >> "$HOME"/.zprofile
-        source "$HOME"/.zprofile
-        nvm install --lts
-        nvm use --lts
+    # development configs
+    if brew list nvm &> /dev/null; then
+        if [ -z "$NVM_DIR" ]; then
+            mkdir ~/.nvm
+            {
+              echo "export NVM_DIR=\"\$HOME/.nvm\""
+              "[ -s \"/opt/homebrew/opt/nvm/nvm.sh\" ] && \. \"/opt/homebrew/opt/nvm/nvm.sh\"  # This loads nvm"
+              "[ -s \"/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm\" ] && \. \"/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm\"  # This loads nvm bash_completion"
+            } >> "$HOME"/.zprofile
+            source "$HOME"/.zprofile
+            nvm install --lts
+            nvm use --lts
+        fi
+    else
+        echo -e "\n${RED}nvm and node is not installed.${ENDCOLOR}"
     fi
 
-    # softwares
+    if brew list powerlevel10k &> /dev/null; then
+        echo "source $(brew --prefix)/share/powerlevel10k/powerlevel10k.zsh-theme" >>~/.zshrc
+    fi
+
+    # software
     echo -e "\n${GREEN}# Installing softwares${ENDCOLOR}\n"
     brew install "${SOFTWARES[@]}";
 
