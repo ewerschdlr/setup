@@ -23,3 +23,4 @@ curl -s https://raw.githubusercontent.com/ewerschdlr/setup/main/macos.sh | bash 
 - [ ] Dotfiles config
 - [ ] Store Apps installations
 - [ ] Linux machine setup
+- [ ] WSL2 machine setup
