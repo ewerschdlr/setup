@@ -3,7 +3,7 @@
 GIT_NAME="$1"
 GIT_EMAIL="$2"
 LOG_FILE="$3"
-DEFAULT_LOG_FILE=~/setup-mac-$(date +%Y/%m/%d-%H:%M:%S).log
+DEFAULT_LOG_FILE=~/setup-mac-$(date +%Y-%m-%dT%H:%M:%S).log
 
 GREEN="\033[1;32m"
 GRAY="\033[1;90m"
