@@ -3,7 +3,7 @@
 GIT_NAME="$1"
 GIT_EMAIL="$2"
 LOG_FILE="$3"
-DEFAULT_LOG_FILE="/tmp/setup-mac-$(date +%Y/%m/%d-%H:%M:%S).log"
+DEFAULT_LOG_FILE=~/setup-mac-$(date +%Y/%m/%d-%H:%M:%S).log
 
 GREEN="\033[1;32m"
 GRAY="\033[1;90m"
@@ -28,6 +28,7 @@ BREW_FORMULAE_DEV_TOOLS=(
     "oha"
     "oven-sh/bun/bun"
     "ffmpeg"
+    "mas"
 )
 
 BREW_CASKS_DEV_TOOLS=(
@@ -82,12 +83,19 @@ FONTS=(
   "font-fira-code"
 )
 
+APP_STORE=(
+  "899247664" #TestFlight
+  "1352778147" #Bitwarden
+  "1497506650" #Yubico Authenticator
+  "1450874784" #Transporter
+)
+
 if [ -z "$LOG_FILE" ]; then
-  echo -ne "Enter file in which to save the log ${GRAY}(/tmp/setup-mac.log)${ENDCOLOR}: "
+  echo -ne "Enter file in which to save the log ${GRAY}($DEFAULT_LOG_FILE)${ENDCOLOR}: "
   read -r LOG_FILE
 
   if [ -z "$LOG_FILE" ]; then
-    LOG_FILE="${DEFAULT_LOG_FILE}"
+    LOG_FILE=$DEFAULT_LOG_FILE
   else
     LOG_DIR=$(dirname "$LOG_FILE")
 
@@ -98,42 +106,45 @@ if [ -z "$LOG_FILE" ]; then
       if [[ "$create_dir" == "y" || "$create_dir" == "Y" || "$create_dir" == "" ]]; then
         mkdir -p "$LOG_DIR"
       else
-        LOG_FILE="${DEFAULT_LOG_FILE}"
+        LOG_FILE=$DEFAULT_LOG_FILE
         echo "Using the default destination instead: $LOG_FILE"
       fi
     fi
   fi
 fi
 
-echo -ne "Do you want to config your git user name and email? ${GRAY}(${ENDCOLOR}y${GRAY}/n)${ENDCOLOR}: "
-read -r config_git
-if [[ "$config_git" == "y" || "$config_git" == "Y" || "$config_git" == "" ]]; then
-  if [ -z "$GIT_NAME" ]; then
-    echo -n "Please provide your git name: "
-    read -r GIT_NAME
-  fi
-
-  if [ -z "$GIT_EMAIL" ]; then
-    echo -n "Please provide your git email: "
-    read -r GIT_EMAIL
-  fi
-fi
-
-echo -e "${GREEN}Starting the installations at $(date +%Y/%m/%d-%H:%M:%S)${ENDCOLOR}\n\n" 2>&1 | tee -a "$LOG_FILE"
-
-# Xcode CLI tools
-echo -e "\n${GREEN}# Installing Xcode Command Line Tools${ENDCOLOR}\n" 2>&1 | tee -a "$LOG_FILE"
-xcode-select --install 2>&1 | tee -a "$LOG_FILE"
-
-# git config
-if [ -n "$GIT_NAME" ]; then
-  git config --global user.name "$GIT_NAME"
-fi
-if [ -n "$GIT_EMAIL" ]; then
-  git config --global user.email "$GIT_EMAIL"
-fi
-
 (
+    echo -ne "Do you want to config your git user name and email? ${GRAY}(${ENDCOLOR}y${GRAY}/n)${ENDCOLOR}: "
+    read -r config_git
+    if [[ "$config_git" == "y" || "$config_git" == "Y" || "$config_git" == "" ]]; then
+      if [ -z "$GIT_NAME" ]; then
+        echo -n "Please provide your git name: "
+        read -r GIT_NAME
+      fi
+
+      if [ -z "$GIT_EMAIL" ]; then
+        echo -n "Please provide your git email: "
+        read -r GIT_EMAIL
+      fi
+    fi
+
+    echo -ne "Do you want to install apps automatically from the App Store? you need to be logged in (manually) to the App Store. ${GRAY}(y/${ENDCOLOR}n${GRAY})${ENDCOLOR}: "
+    read -r config_mas
+
+    echo -e "${GREEN}Starting the installations at $(date +%Y/%m/%d-%H:%M:%S)${ENDCOLOR}\n\n"
+
+    # Xcode CLI tools
+    echo -e "\n${GREEN}# Installing Xcode Command Line Tools${ENDCOLOR}\n"
+    xcode-select --install
+
+    # git config
+    if [ -n "$GIT_NAME" ]; then
+      git config --global user.name "$GIT_NAME"
+    fi
+    if [ -n "$GIT_EMAIL" ]; then
+      git config --global user.email "$GIT_EMAIL"
+    fi
+
     # homebrew
     if ! command -v brew &>/dev/null; then
         echo -e "\n${GREEN}# Installing Homebrew${ENDCOLOR}\n"
@@ -195,6 +206,14 @@ fi
     brew tap homebrew/cask-fonts
     brew install --cask "${FONTS[@]}";
 
+    ## app store
+    echo -e "\n${GREEN}# Installing from App Store${ENDCOLOR}\n"
+    if [[ "$config_mas" == "y" || "$config_mas" == "Y" ]]; then
+      mas install "${APP_STORE[@]}";
+    else
+      echo "Skipping App Store installation."
+    fi
+
     echo -e "${GREEN}Ending the installations at $(date +%Y/%m/%d %H:%M:%S)${ENDCOLOR}\n\n"
 
-) 2>&1 | tee -a "$LOG_FILE"
+) 2>&1 | tee -a ${LOG_FILE/#~/$HOME}
