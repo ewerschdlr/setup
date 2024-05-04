@@ -28,7 +28,10 @@ BREW_FORMULAE_DEV_TOOLS=(
     "oha"
     "oven-sh/bun/bun"
     "ffmpeg"
+    "rust"
     "mas"
+    "wget"
+    "clojure"
 )
 
 BREW_CASKS_DEV_TOOLS=(
@@ -131,10 +134,10 @@ fi
     echo -ne "Do you want to install apps automatically from the App Store? you need to be logged in (manually) to the App Store. ${GRAY}(y/${ENDCOLOR}n${GRAY})${ENDCOLOR}: "
     read -r config_mas
 
-    echo -e "${GREEN}Starting the installations at $(date +%Y/%m/%d-%H:%M:%S)${ENDCOLOR}\n\n"
+    echo -e "${GREEN}===> Starting the installations at $(date +%Y/%m/%dT%H:%M:%S)${ENDCOLOR}\n"
 
     # Xcode CLI tools
-    echo -e "\n${GREEN}# Installing Xcode Command Line Tools${ENDCOLOR}\n"
+    echo -e "\n${GREEN}==> Installing Xcode Command Line Tools${ENDCOLOR}\n"
     xcode-select --install
 
     # git config
@@ -147,7 +150,7 @@ fi
 
     # homebrew
     if ! command -v brew &>/dev/null; then
-        echo -e "\n${GREEN}# Installing Homebrew${ENDCOLOR}\n"
+        echo -e "\n${GREEN}==> Installing Homebrew${ENDCOLOR}\n"
         curl -s https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh | bash
         echo "eval \"$(/opt/homebrew/bin/brew shellenv)\" # This loads homebrew" >> "$HOME"/.zprofile
         eval "$(/opt/homebrew/bin/brew shellenv)"
@@ -155,14 +158,16 @@ fi
     fi
 
     # cleaning the environment for brew installs
-    brew uninstall --ignore-dependencies node
-    brew uninstall --force node
+    if brew list node &> /dev/null; then
+      brew uninstall --ignore-dependencies node
+      brew uninstall --force node
+    fi
 
     ## development tools
-    echo -e "\n${GREEN}# Installing brew casks development tools${ENDCOLOR}\n"
+    echo -e "\n${GREEN}==> Installing brew casks development tools${ENDCOLOR}\n"
     brew install "${BREW_FORMULAE_DEV_TOOLS[@]}"
 
-    echo -e "\n${GREEN}# Installing brew formulae development tools${ENDCOLOR}\n"
+    echo -e "\n${GREEN}==> Installing brew formulae development tools${ENDCOLOR}\n"
     brew install --cask "${BREW_CASKS_DEV_TOOLS[@]}"
 
     # development configs
@@ -172,8 +177,8 @@ fi
             mkdir ~/.nvm
             {
               echo "export NVM_DIR=\"\$HOME/.nvm\""
-              "[ -s \"/opt/homebrew/opt/nvm/nvm.sh\" ] && \. \"/opt/homebrew/opt/nvm/nvm.sh\"  # This loads nvm"
-              "[ -s \"/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm\" ] && \. \"/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm\"  # This loads nvm bash_completion"
+              echo "[ -s \"/opt/homebrew/opt/nvm/nvm.sh\" ] && \. \"/opt/homebrew/opt/nvm/nvm.sh\"  # This loads nvm"
+              echo "[ -s \"/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm\" ] && \. \"/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm\"  # This loads nvm bash_completion"
             } >> "$HOME"/.zprofile
             source "$HOME"/.zprofile
             nvm install --lts
@@ -189,31 +194,36 @@ fi
     fi
 
     # gcloud
-    export CLOUDSDK_PYTHON=$(which python3.10)
-    source "$(brew --prefix)/share/google-cloud-sdk/path.zsh.inc"
-    source "$(brew --prefix)/share/google-cloud-sdk/completion.zsh.inc"
+    if brew list google-cloud-sdk &> /dev/null; then
+      {
+        echo "CLOUDSDK_PYTHON=$(which python3.10)"
+        echo "export CLOUDSDK_PYTHON"
+        echo "source \"$(brew --prefix)/share/google-cloud-sdk/path.zsh.inc\""
+        echo "source \"$(brew --prefix)/share/google-cloud-sdk/completion.zsh.inc\""
+      } >> "$HOME"/.zprofile
+    fi
 
     ## software
-    echo -e "\n${GREEN}# Installing softwares${ENDCOLOR}\n"
+    echo -e "\n${GREEN}==> Installing softwares${ENDCOLOR}\n"
     brew install --cask "${SOFTWARES[@]}";
 
     ## file system extensions
-    echo -e "\n${GREEN}# Installing system extensions${ENDCOLOR}\n"
+    echo -e "\n${GREEN}==> Installing system extensions${ENDCOLOR}\n"
     brew install --cask "${SYSTEM_EXTENSIONS[@]}";
 
     ## fonts
-    echo -e "\n${GREEN}# Installing fonts${ENDCOLOR}\n"
+    echo -e "\n${GREEN}==> Installing fonts${ENDCOLOR}\n"
     brew tap homebrew/cask-fonts
     brew install --cask "${FONTS[@]}";
 
     ## app store
-    echo -e "\n${GREEN}# Installing from App Store${ENDCOLOR}\n"
+    echo -e "\n${GREEN}==> Installing from App Store${ENDCOLOR}\n"
     if [[ "$config_mas" == "y" || "$config_mas" == "Y" ]]; then
       mas install "${APP_STORE[@]}";
     else
       echo "Skipping App Store installation."
     fi
 
-    echo -e "${GREEN}Ending the installations at $(date +%Y/%m/%d %H:%M:%S)${ENDCOLOR}\n\n"
+    echo -e "${GREEN}===> Ending the installations at $(date +%Y/%m/%dT%H:%M:%S)${ENDCOLOR}\n\n"
 
-) 2>&1 | tee -a ${LOG_FILE/#~/$HOME}
+) 2>&1 | tee -a "${LOG_FILE/#~/$HOME}"
