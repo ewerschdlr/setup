@@ -15,12 +15,12 @@ Run in terminal:
 ### macOS
 
 ```console
-curl -s https://raw.githubusercontent.com/ewerschdlr/setup/main/macos.sh | bash -s”
+curl -s https://raw.githubusercontent.com/ewerschdlr/setup/main/macos.sh | bash -s
 ```
 
 ### ToDo
 
 - [ ] Dotfiles config
-- [ ] Store Apps installations
+- [x] Store Apps installations
 - [ ] Linux machine setup
 - [ ] WSL2 machine setup
